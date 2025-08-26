@@ -42,14 +42,29 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentTrack }) => {
   const track = currentTrack || defaultTrack;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-20 sm:h-24 bg-player-background glass border-t border-border z-50">
-      <div className="h-full flex items-center justify-between px-3 sm:px-4 lg:px-6">
+    <div className="fixed bottom-0 left-0 right-0 bg-player-background glass border-t border-border z-50">
+      {/* Mobile Progress Bar - Top of player */}
+      <div className="block sm:hidden px-4 pt-1">
+        <Slider 
+          value={progress} 
+          onValueChange={setProgress}
+          max={100} 
+          step={1} 
+          className="w-full h-1"
+        />
+        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+          <span>1:23</span>
+          <span>{track.duration}</span>
+        </div>
+      </div>
+
+      <div className="h-16 sm:h-20 flex items-center justify-between px-3 sm:px-4 lg:px-6">
         {/* Track Info */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 max-w-[40%] lg:max-w-none">
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 max-w-[35%] sm:max-w-[40%] lg:max-w-none">
           <img 
             src={track.coverUrl} 
             alt={track.title}
-            className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg shadow-md flex-shrink-0"
+            className="w-9 h-9 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg shadow-md flex-shrink-0"
           />
           <div className="min-w-0">
             <h4 className="font-semibold text-xs sm:text-sm truncate">{track.title}</h4>
@@ -82,19 +97,19 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentTrack }) => {
               <Shuffle size={16} />
             </button>
             <button className="text-foreground hover:text-primary">
-              <SkipBack className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
+              <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             <button 
               onClick={() => setIsPlaying(!isPlaying)}
-              className="bg-primary text-primary-foreground rounded-full p-1.5 sm:p-2 hover:bg-primary-hover"
+              className="bg-primary text-primary-foreground rounded-full p-2 sm:p-2.5 hover:bg-primary-hover"
             >
               {isPlaying ? 
-                <Pause className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]" /> : 
-                <Play className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] ml-0.5" />
+                <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : 
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />
               }
             </button>
             <button className="text-foreground hover:text-primary">
-              <SkipForward className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
+              <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             <button 
               onClick={() => setRepeat(!repeat)}
@@ -107,7 +122,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentTrack }) => {
             </button>
           </div>
           
-          {/* Progress Bar - Hidden on mobile */}
+          {/* Progress Bar - Desktop only */}
           <div className="hidden sm:flex items-center gap-2 w-full">
             <span className="text-xs text-muted-foreground min-w-[32px]">1:23</span>
             <Slider 
@@ -121,28 +136,41 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentTrack }) => {
           </div>
         </div>
 
-        {/* Volume & Extra Controls - Hidden on mobile/tablet */}
-        <div className="hidden lg:flex items-center gap-3 justify-end flex-1">
-          <button className="text-muted-foreground hover:text-foreground">
-            <Mic2 size={18} />
-          </button>
-          <button className="text-muted-foreground hover:text-foreground">
-            <ListMusic size={18} />
-          </button>
-          <div className="flex items-center gap-2">
+        {/* Volume & Extra Controls */}
+        <div className="flex items-center gap-2 sm:gap-3 justify-end flex-1 max-w-[35%] sm:max-w-none">
+          {/* Mobile volume control */}
+          <div className="flex sm:hidden items-center">
             <button 
               onClick={() => setVolume(volume[0] === 0 ? [70] : [0])}
               className="text-muted-foreground hover:text-foreground"
             >
-              {volume[0] === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              {volume[0] === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
-            <Slider 
-              value={volume} 
-              onValueChange={setVolume}
-              max={100} 
-              step={1} 
-              className="w-20"
-            />
+          </div>
+
+          {/* Desktop controls */}
+          <div className="hidden sm:flex items-center gap-3">
+            <button className="hidden lg:block text-muted-foreground hover:text-foreground">
+              <Mic2 size={18} />
+            </button>
+            <button className="text-muted-foreground hover:text-foreground">
+              <ListMusic size={18} />
+            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setVolume(volume[0] === 0 ? [70] : [0])}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                {volume[0] === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              </button>
+              <Slider 
+                value={volume} 
+                onValueChange={setVolume}
+                max={100} 
+                step={1} 
+                className="w-16 lg:w-20"
+              />
+            </div>
           </div>
         </div>
       </div>
