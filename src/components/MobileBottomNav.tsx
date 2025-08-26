@@ -20,13 +20,14 @@ export const MobileBottomNav: React.FC = () => {
             key={path}
             to={path}
             className={({ isActive }) => cn(
-              "flex flex-col items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors",
-              isActive ? "text-primary" : "text-muted-foreground"
+              "flex flex-col items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors min-w-[50px]",
+              isActive 
+                ? "text-primary bg-primary/10" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
-            <Icon size={18} className="sm:hidden" />
-            <Icon size={20} className="hidden sm:block" />
-            <span className="text-[10px] sm:text-xs">{label}</span>
+            <Icon size={20} className="flex-shrink-0" strokeWidth={1.5} />
+            <span className="text-[10px] sm:text-xs font-medium leading-none">{label}</span>
           </NavLink>
         ))}
       </div>
