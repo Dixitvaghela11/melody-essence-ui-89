@@ -3,80 +3,103 @@ import { AlbumCard } from '@/components/AlbumCard';
 import { Album, Playlist } from '@/types/music';
 import { ChevronRight, TrendingUp, Clock, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { usePlayer } from '@/contexts/PlayerContext';
 import heroImage from '@/assets/hero-music.jpg';
+
+interface ITunesAlbumResult {
+  collectionId?: number;
+  trackId?: number;
+  collectionName?: string;
+  trackCensoredName?: string;
+  artistName?: string;
+  releaseDate?: string;
+  artworkUrl100?: string;
+  artworkUrl60?: string;
+}
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { setCurrentTrack, setMusicPlaying } = usePlayer();
 
-  // Mock data
-  const trendingAlbums: Album[] = [
-    {
-      id: '1',
-      title: 'Midnight Dreams',
-      artist: 'Luna Wave',
-      year: 2024,
-      coverUrl: '/api/placeholder/300/300'
-    },
-    {
-      id: '2',
-      title: 'Electric Pulse',
-      artist: 'Neon Lights',
-      year: 2024,
-      coverUrl: '/api/placeholder/300/300'
-    },
-    {
-      id: '3',
-      title: 'Ocean Whispers',
-      artist: 'Azure Sky',
-      year: 2024,
-      coverUrl: '/api/placeholder/300/300'
-    },
-    {
-      id: '4',
-      title: 'Urban Stories',
-      artist: 'City Beats',
-      year: 2024,
-      coverUrl: '/api/placeholder/300/300'
-    },
-    {
-      id: '5',
-      title: 'Cosmic Journey',
-      artist: 'Stellar Sound',
-      year: 2024,
-      coverUrl: '/api/placeholder/300/300'
-    },
-  ];
+  // Remote albums state
+  const [trendingAlbums, setTrendingAlbums] = React.useState<Album[]>([]);
+  const [recentlyPlayed, setRecentlyPlayed] = React.useState<Album[]>([]);
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  const recentlyPlayed: Album[] = [
-    {
-      id: '6',
-      title: 'Summer Vibes',
-      artist: 'Sunset Boulevard',
-      year: 2023,
-      coverUrl: '/api/placeholder/300/300'
-    },
-    {
-      id: '7',
-      title: 'Night Drive',
-      artist: 'Midnight Cruisers',
-      year: 2023,
-      coverUrl: '/api/placeholder/300/300'
-    },
-    {
-      id: '8',
-      title: 'Coffee Shop Jazz',
-      artist: 'Smooth Grooves',
-      year: 2023,
-      coverUrl: '/api/placeholder/300/300'
-    },
-    {
-      id: '9',
-      title: 'Mountain Echo',
-      artist: 'Alpine Dreams',
-      year: 2023,
-      coverUrl: '/api/placeholder/300/300'
-    },
-  ];
+  const handlePlaySong = (album: Album) => {
+    setCurrentTrack({
+      title: album.title,
+      artist: album.artist,
+      coverUrl: album.coverUrl,
+      duration: '3:45' // Default duration since we don't have it from iTunes API
+    });
+    setMusicPlaying(true);
+  };
+
+  React.useEffect(() => {
+    let isCancelled = false;
+    const controller = new AbortController();
+
+    async function fetchAlbums() {
+      try {
+        setIsLoading(true);
+        setErrorMessage(null);
+
+        // Helper to map iTunes album result to Album type
+        const mapToAlbum = (item: ITunesAlbumResult): Album => ({
+          id: String(item.collectionId ?? item.trackId ?? crypto.randomUUID()),
+          title: (item.collectionName ?? item.trackCensoredName ?? 'Unknown') as string,
+          artist: item.artistName ?? 'Unknown',
+          year: item.releaseDate ? new Date(item.releaseDate).getFullYear() : new Date().getFullYear(),
+          coverUrl: (item.artworkUrl100 || item.artworkUrl60 || '/api/placeholder/300/300').replace('100x100bb', '300x300bb')
+        });
+
+        // Fetch a couple of popular genres to simulate sections
+        const headers: HeadersInit = { 'Accept': 'application/json' };
+        const requests: Array<Promise<Response>> = [
+          fetch(`https://itunes.apple.com/search?term=${encodeURIComponent('india')}&country=IN&media=music&entity=song`, { signal: controller.signal, headers }),
+          fetch(`https://itunes.apple.com/search?term=${encodeURIComponent('bollywood')}&country=IN&media=music&entity=song`, { signal: controller.signal, headers })
+        ];
+
+        const [trendingRes, recentRes] = await Promise.all(requests);
+        let combinedError: string | null = null;
+        type ITunesSearchResponse = { resultCount?: number; results?: ITunesAlbumResult[] };
+        let trendingJson: ITunesSearchResponse = { results: [] };
+        let recentJson: ITunesSearchResponse = { results: [] };
+
+        if (trendingRes.ok) {
+          trendingJson = await trendingRes.json();
+        } else {
+          combinedError = `Trending status ${trendingRes.status}`;
+        }
+
+        if (recentRes.ok) {
+          recentJson = await recentRes.json();
+        } else {
+          combinedError = combinedError ? `${combinedError}; Recent status ${recentRes.status}` : `Recent status ${recentRes.status}`;
+        }
+
+        if (isCancelled) return;
+
+        setTrendingAlbums((trendingJson.results || []).map(mapToAlbum));
+        setRecentlyPlayed((recentJson.results || []).map(mapToAlbum));
+        if (combinedError) setErrorMessage(`Failed to fetch from iTunes API. ${combinedError}`);
+      } catch (error: unknown) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        const message = error instanceof Error ? error.message : 'Something went wrong while fetching music.';
+        setErrorMessage(message);
+      } finally {
+        if (!isCancelled) setIsLoading(false);
+      }
+    }
+
+    fetchAlbums();
+    return () => {
+      isCancelled = true;
+      controller.abort();
+    };
+  }, []);
 
   const categories = [
     { name: 'Pop', gradient: 'from-pink-500 to-purple-500', icon: Music },
@@ -144,11 +167,23 @@ export const Home: React.FC = () => {
             <ChevronRight size={16} />
           </button>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {trendingAlbums.map((album) => (
-            <AlbumCard key={album.id} album={album} />
-          ))}
-        </div>
+        {isLoading && (
+          <p className="text-sm text-muted-foreground">Loading albums…</p>
+        )}
+        {errorMessage && (
+          <p className="text-sm text-destructive">{errorMessage}</p>
+        )}
+        {!isLoading && !errorMessage && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {trendingAlbums.map((album) => (
+              <AlbumCard 
+                key={album.id} 
+                album={album} 
+                onPlay={() => handlePlaySong(album)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Recently Played */}
@@ -167,11 +202,17 @@ export const Home: React.FC = () => {
             <ChevronRight size={16} />
           </button>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {recentlyPlayed.map((album) => (
-            <AlbumCard key={album.id} album={album} />
-          ))}
-        </div>
+        {!isLoading && !errorMessage && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {recentlyPlayed.map((album) => (
+              <AlbumCard 
+                key={album.id} 
+                album={album} 
+                onPlay={() => handlePlaySong(album)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Made For You */}

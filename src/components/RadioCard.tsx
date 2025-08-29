@@ -32,6 +32,7 @@ export const RadioCard: React.FC<RadioCardProps> = ({ station, onPlay }) => {
           <button 
             onClick={onPlay}
             className="bg-primary text-primary-foreground rounded-full p-4 shadow-lg hover:bg-primary-hover transform hover:scale-110 transition-all"
+            title="Play"
           >
             <Play size={24} className="ml-0.5" fill="currentColor" />
           </button>

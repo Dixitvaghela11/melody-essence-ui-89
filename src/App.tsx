@@ -15,10 +15,12 @@ import { RadioPage } from "./pages/Radio";
 import { Library } from "./pages/Library";
 import { Search } from "./pages/Search";
 import NotFound from "./pages/NotFound";
+import GenrePage from "./pages/Genre";
+import { PlayerProvider, usePlayer } from "./contexts/PlayerContext";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const AppContent = () => {
   // Check for saved theme preference or default to system preference
   const getInitialTheme = () => {
     const savedTheme = localStorage.getItem('theme');
@@ -35,6 +37,18 @@ const App = () => {
     message: '',
     type: 'info' as 'info' | 'success' | 'warning'
   });
+
+  const { 
+    currentRadioStation, 
+    isRadioPlaying, 
+    isRadio, 
+    currentTrack, 
+    isMusicPlaying,
+    volume,
+    toggleRadioPlayPause,
+    toggleMusicPlayPause,
+    setVolume
+  } = usePlayer();
 
   useEffect(() => {
     // Apply initial theme
@@ -69,6 +83,18 @@ const App = () => {
     localStorage.setItem('theme', newTheme ? 'dark' : 'light');
   };
 
+  const handlePlayPause = () => {
+    if (isRadio) {
+      toggleRadioPlayPause();
+    } else {
+      toggleMusicPlayPause();
+    }
+  };
+
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -95,6 +121,7 @@ const App = () => {
                 <Route path="/podcasts" element={<Podcasts />} />
                 <Route path="/radio" element={<RadioPage />} />
                 <Route path="/trending" element={<Home />} />
+                <Route path="/genre/:name" element={<GenrePage />} />
                 <Route path="/liked" element={<Library />} />
                 <Route path="/albums" element={<Library />} />
                 <Route path="/artists" element={<Library />} />
@@ -108,7 +135,14 @@ const App = () => {
             <MobileBottomNav />
             
             {/* Music Player */}
-            <MusicPlayer />
+            <MusicPlayer 
+              currentTrack={currentTrack}
+              currentRadioStation={currentRadioStation}
+              onPlayPause={handlePlayPause}
+              onVolumeChange={handleVolumeChange}
+              isPlaying={isRadio ? isRadioPlaying : isMusicPlaying}
+              isRadio={isRadio}
+            />
             
             {/* Notification Banner */}
             <NotificationBanner 
@@ -121,6 +155,14 @@ const App = () => {
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
+  );
+};
+
+const App = () => {
+  return (
+    <PlayerProvider>
+      <AppContent />
+    </PlayerProvider>
   );
 };
 

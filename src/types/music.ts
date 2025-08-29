@@ -53,4 +53,5 @@ export interface RadioStation {
   imageUrl: string;
   frequency?: string;
   isLive?: boolean;
+  streamUrl?: string;
 }
